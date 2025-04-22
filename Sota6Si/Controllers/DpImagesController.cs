@@ -22,77 +22,99 @@ namespace Sota6Si.Controllers
 
         // GET: api/DpImages
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<DpImage>>> GetDpImages()
+        public async Task<IActionResult> GetDpImages()
         {
-            var images = await _context.DpImages.ToListAsync();
-            return Ok(images);
+            try
+            {
+                var images = await _context.DpImages.ToListAsync();
+                return Ok(images);
+            }
+            catch (Exception ex)
+            {
+                return Problem(detail: ex.Message, statusCode: 500);
+            }
         }
 
         // GET: api/DpImages/{id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<DpImage>> GetDpImage(int id)
+        public async Task<IActionResult> GetDpImage(int id)
         {
-            var image = await _context.DpImages.FindAsync(id);
-
-            if (image == null)
+            try
             {
-                return NotFound();
-            }
+                var image = await _context.DpImages.FindAsync(id);
 
-            return Ok(image);
+                if (image == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(image);
+            }
+            catch (Exception ex)
+            {
+                return Problem(detail: ex.Message, statusCode: 500);
+            }
         }
 
         // POST: api/DpImages
         [HttpPost]
-        public async Task<ActionResult<DpImage>> CreateDpImage([FromForm] CreateDpImageRequest request)
+        public async Task<IActionResult> CreateDpImage([FromForm] CreateDpImageRequest request)
         {
-            if (request.File == null || request.File.Length == 0)
+            try
             {
-                return BadRequest("File is not selected or has no content.");
+                if (request.File == null || request.File.Length == 0)
+                {
+                    return BadRequest("File is not selected or has no content.");
+                }
+
+                using var memoryStream = new MemoryStream();
+                await request.File.CopyToAsync(memoryStream);
+                var imageData = memoryStream.ToArray();
+
+                var dpImage = new DpImage
+                {
+                    DpProductId = request.DpProductId,
+                    DpImageTitle = request.DpImageTitle,
+                    ImagesData = imageData
+                };
+
+                _context.DpImages.Add(dpImage);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetDpImage), new { id = dpImage.DpImagesId }, dpImage);
             }
-
-            using var memoryStream = new MemoryStream();
-            await request.File.CopyToAsync(memoryStream);
-            var imageData = memoryStream.ToArray();
-
-            var dpImage = new DpImage
+            catch (Exception ex)
             {
-                DpProductId = request.DpProductId,
-                DpImageTitle = request.DpImageTitle,
-                ImagesData = imageData
-            };
-
-            _context.DpImages.Add(dpImage);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetDpImage), new { id = dpImage.DpImagesId }, dpImage);
+                return Problem(detail: ex.Message, statusCode: 500);
+            }
         }
 
         // PUT: api/DpImages/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateDpImage(int id, [FromForm] UpdateDpImageRequest request)
         {
-            var dpImage = await _context.DpImages.FindAsync(id);
-            if (dpImage == null)
-            {
-                return NotFound();
-            }
-
-            if (request.File != null && request.File.Length > 0)
-            {
-                using var memoryStream = new MemoryStream();
-                await request.File.CopyToAsync(memoryStream);
-                dpImage.ImagesData = memoryStream.ToArray();
-            }
-
-            dpImage.DpProductId = request.DpProductId;
-            dpImage.DpImageTitle = request.DpImageTitle;
-
-            _context.Entry(dpImage).State = EntityState.Modified;
-
             try
             {
+                var dpImage = await _context.DpImages.FindAsync(id);
+                if (dpImage == null)
+                {
+                    return NotFound();
+                }
+
+                if (request.File != null && request.File.Length > 0)
+                {
+                    using var memoryStream = new MemoryStream();
+                    await request.File.CopyToAsync(memoryStream);
+                    dpImage.ImagesData = memoryStream.ToArray();
+                }
+
+                dpImage.DpProductId = request.DpProductId;
+                dpImage.DpImageTitle = request.DpImageTitle;
+
+                _context.Entry(dpImage).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
+
+                return NoContent();
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -102,40 +124,56 @@ namespace Sota6Si.Controllers
                 }
                 else
                 {
-                    throw;
+                    return Conflict("Concurrency error occurred.");
                 }
             }
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return Problem(detail: ex.Message, statusCode: 500);
+            }
         }
 
         // DELETE: api/DpImages/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteDpImage(int id)
         {
-            var dpImage = await _context.DpImages.FindAsync(id);
-            if (dpImage == null)
+            try
             {
-                return NotFound();
+                var dpImage = await _context.DpImages.FindAsync(id);
+                if (dpImage == null)
+                {
+                    return NotFound();
+                }
+
+                _context.DpImages.Remove(dpImage);
+                await _context.SaveChangesAsync();
+
+                return NoContent();
             }
-
-            _context.DpImages.Remove(dpImage);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return Problem(detail: ex.Message, statusCode: 500);
+            }
         }
 
         // GET: api/DpImages/{id}/image
         [HttpGet("{id}/image")]
         public async Task<IActionResult> GetDpImageData(int id)
         {
-            var dpImage = await _context.DpImages.FindAsync(id);
-            if (dpImage == null || dpImage.ImagesData == null)
+            try
             {
-                return NotFound();
-            }
+                var dpImage = await _context.DpImages.FindAsync(id);
+                if (dpImage == null || dpImage.ImagesData == null)
+                {
+                    return NotFound();
+                }
 
-            return File(dpImage.ImagesData, "image/png");
+                return File(dpImage.ImagesData, "image/png");
+            }
+            catch (Exception ex)
+            {
+                return Problem(detail: ex.Message, statusCode: 500);
+            }
         }
 
         private bool DpImageExists(int id)
