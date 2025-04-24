@@ -12,8 +12,6 @@ public partial class DpProductAttribute
 
     public int DpCount { get; set; }
 
-    public int? DpColorId { get; set; }
-
     public int? DpSize { get; set; }
     [JsonIgnore]
     public virtual DpProduct DpProduct { get; set; } = null!;

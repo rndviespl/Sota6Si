@@ -183,10 +183,10 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.DpSize, "dp_size_attributes_1_idx");
 
-            entity.HasIndex(e => e.DpColorId, "index3");
+           
 
             entity.Property(e => e.DpAttributesId).HasColumnName("dp_attributes_id");
-            entity.Property(e => e.DpColorId).HasColumnName("dp_color_id");
+            
             entity.Property(e => e.DpCount)
                 .HasDefaultValueSql("('1')")
                 .HasColumnName("dp_count");
