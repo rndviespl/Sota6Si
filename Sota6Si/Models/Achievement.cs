@@ -11,7 +11,7 @@ public partial class Achievement
     public string Title { get; set; } = null!;
 
     public string? TextAchievement { get; set; }
-    
+
     [JsonIgnore]
     public virtual ICollection<DpUserProj> DpUserProjs { get; set; } = new List<DpUserProj>();
 }

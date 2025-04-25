@@ -12,4 +12,7 @@ public partial class DpSize
 
     [JsonIgnore]
     public virtual ICollection<DpProductAttribute> DpProductAttributes { get; set; } = new List<DpProductAttribute>();
+
+    [JsonIgnore]
+    public virtual ICollection<DpCategory> DpCategories { get; set; } = new List<DpCategory>(); 
 }

@@ -65,7 +65,17 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.DpCategoryTitle)
                 .HasMaxLength(45)
                 .HasColumnName("dp_category_title");
+
+            
+            entity.Property(e => e.SizeId).HasColumnName("size_id");
+
+            
+            entity.HasOne(d => d.Size)
+                  .WithMany(p => p.DpCategories)
+                  .HasForeignKey(d => d.SizeId)
+                  .HasConstraintName("FK_DpCategory_DpSize");
         });
+
 
         modelBuilder.Entity<DpImage>(entity =>
         {
@@ -183,10 +193,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.DpSize, "dp_size_attributes_1_idx");
 
-           
-
             entity.Property(e => e.DpAttributesId).HasColumnName("dp_attributes_id");
-            
             entity.Property(e => e.DpCount)
                 .HasDefaultValueSql("('1')")
                 .HasColumnName("dp_count");
