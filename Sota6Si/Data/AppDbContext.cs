@@ -200,15 +200,18 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.DpProductId).HasColumnName("dp_product_id");
             entity.Property(e => e.DpSize).HasColumnName("dp_size");
 
-            entity.HasOne(d => d.DpProduct).WithMany(p => p.DpProductAttributes)
+            entity.HasOne(d => d.DpProduct)
+                .WithMany(p => p.DpProductAttributes)
                 .HasForeignKey(d => d.DpProductId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("dp_product_attributes_ibfk_1");
 
-            entity.HasOne(d => d.DpSizeNavigation).WithMany(p => p.DpProductAttributes)
+            entity.HasOne(d => d.DpSizeNavigation)
+                .WithMany(p => p.DpProductAttributes)
                 .HasForeignKey(d => d.DpSize)
                 .HasConstraintName("dp_size_attributes_1");
         });
+
 
         modelBuilder.Entity<DpSize>(entity =>
         {

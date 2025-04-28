@@ -66,7 +66,7 @@ namespace Sota6Si.Controllers
         public async Task<IActionResult> CreateDpProductAttribute([FromBody] DpProductAttribute dpProductAttribute)
         {
             try
-            {
+            { 
                 if (dpProductAttribute == null)
                 {
                     return BadRequest("Product attribute data cannot be null");

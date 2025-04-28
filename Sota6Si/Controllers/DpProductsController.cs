@@ -28,7 +28,9 @@ namespace Sota6Si.Controllers
         {
             try
             {
-                var products = await _context.DpProducts.Include(p => p.DpCategory).ToListAsync();
+                var products = await _context.DpProducts
+                    .Include(p => p.DpImages)
+                    .ToListAsync();
                 return Ok(products);
             }
             catch (Exception ex)
