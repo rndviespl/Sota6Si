@@ -46,8 +46,8 @@ namespace Sota6Si.Controllers
             try
             {
                 var product = await _context.DpProducts
-                    .Include(p => p.DpCategory)
                     .Include(p => p.DpImages)
+                    .Include(p => p.DpCategory)
                     .Include(p => p.DpProductAttributes)
                         .ThenInclude(pa => pa.DpSizeNavigation)
                     .FirstOrDefaultAsync(p => p.DpProductId == id);
