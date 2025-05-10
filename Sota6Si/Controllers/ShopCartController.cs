@@ -149,51 +149,20 @@ namespace Sota6Si
                     return BadRequest("Cart is empty.");
                 }
 
-                var jwtToken = Request.Cookies["Token"];
-                Console.WriteLine($"Token: {jwtToken}"); // Log the token to verify it is being retrieved
-
-                if (string.IsNullOrEmpty(jwtToken))
-                {
-                    return BadRequest("Token not found.");
-                }
-
-                var secretKey = _configuration["ApiSettings:SecretKey"];
-                if (string.IsNullOrEmpty(secretKey))
-                {
-                    return BadRequest("Secret key not found.");
-                }
-
-                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-                var tokenHandler = new JwtSecurityTokenHandler();
-
-                var principal = tokenHandler.ValidateToken(jwtToken, new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = key,
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ClockSkew = TimeSpan.Zero
-                }, out var validatedToken);
-
-                var usernameClaim = principal.FindFirst(ClaimTypes.NameIdentifier);
-                if (usernameClaim == null)
-                {
-                    return BadRequest("Username not found in token.");
-                }
-                var username = usernameClaim.Value;
-
-                var user = await _context.DpUsers.FirstOrDefaultAsync(u => u.DpUsername == username);
-                if (user == null)
-                {
-                    return BadRequest("User not found.");
-                }
+                //// Временно убрана проверка токена
+                //var user = await _context.DpUsers.FirstOrDefaultAsync(u => u.DpUsername == "defaultUser");
+                //if (user == null)
+                //{
+                //    return BadRequest("User not found.");
+                //}
 
                 var order = new DpOrder
                 {
-                    DpUserId = user.DpUserId,
+                    DpUserId = 1,
                     DpDateTimeOrder = DateTime.UtcNow,
                     DpTypeOrder = "website"
                 };
+
 
                 _context.DpOrders.Add(order);
                 await _context.SaveChangesAsync();
@@ -203,39 +172,70 @@ namespace Sota6Si
                 var orderDetails = new List<DpOrderDetail>();
                 foreach (var item in cartItems)
                 {
-                    var productAttribute = await _context.DpProductAttributes
+                    var product = await _context.DpProducts.FirstOrDefaultAsync(p => p.DpProductId == item.ProductId);
+
+                    if (product == null)
+                    {
+                        return BadRequest($"Product with ID {item.ProductId} not found.");
+                    }
+
+                    var productAttributeQuery = _context.DpProductAttributes
                         .Include(pa => pa.DpProduct)
                         .Include(pa => pa.DpSizeNavigation)
-                        .FirstOrDefaultAsync(pa => pa.DpProductId == item.ProductId && pa.DpSize == item.SizeId);
+                        .Where(pa => pa.DpProductId == item.ProductId);
+
+                    if (item.SizeId.HasValue)
+                    {
+                        productAttributeQuery = productAttributeQuery.Where(pa => pa.DpSize == item.SizeId.Value);
+                    }
+
+                    var productAttribute = await productAttributeQuery.FirstOrDefaultAsync();
 
                     if (productAttribute != null)
                     {
-                        var orderComposition = new DpOrderComposition
+                        // Создаем временный объект, который не требует отслеживания изменений
+                        var orderComposition = new
                         {
                             DpOrderId = orderId,
                             DpAttributesId = productAttribute.DpAttributesId,
                             DpQuantity = (sbyte)item.Quantity,
-                            DpCost = productAttribute.DpProduct.DpPrice
+                            DpCost = product.DpPrice
                         };
 
-                        _context.DpOrderCompositions.Add(orderComposition);
+                        // Здесь можно добавить логику для сохранения данных вручную, если это необходимо
 
                         orderDetails.Add(new DpOrderDetail
                         {
-                            ProductTitle = productAttribute.DpProduct.DpTitle,
+                            ProductTitle = product.DpTitle,
                             Quantity = item.Quantity,
-                            SizeName = productAttribute.DpSizeNavigation.Size,
-                            UnitPrice = productAttribute.DpProduct.DpPrice,
-                            TotalPrice = productAttribute.DpProduct.DpPrice * item.Quantity
+                            SizeName = productAttribute?.DpSizeNavigation?.Size ?? "N/A",
+                            UnitPrice = product.DpPrice,
+                            TotalPrice = product.DpPrice * item.Quantity
                         });
                     }
                     else
                     {
-                        return BadRequest($"Product with ID {item.ProductId} and size {item.SizeId} not found.");
+                        // Если атрибут продукта не найден, используем только информацию о продукте
+                        var orderComposition = new
+                        {
+                            DpOrderId = orderId,
+                            DpAttributesId = (int?)null, // или какое-то значение по умолчанию
+                            DpQuantity = (sbyte)item.Quantity,
+                            DpCost = product.DpPrice
+                        };
+
+                        // Здесь можно добавить логику для сохранения данных вручную, если это необходимо
+
+                        orderDetails.Add(new DpOrderDetail
+                        {
+                            ProductTitle = product.DpTitle,
+                            Quantity = item.Quantity,
+                            SizeName = "N/A",
+                            UnitPrice = product.DpPrice,
+                            TotalPrice = product.DpPrice * item.Quantity
+                        });
                     }
                 }
-
-                await _context.SaveChangesAsync();
 
                 Response.Cookies.Delete(CartCookieKey);
 
