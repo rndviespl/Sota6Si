@@ -140,18 +140,29 @@ namespace Sota6Si
         }
 
         [HttpPost("Checkout")]
-        public async Task<IActionResult> Checkout()
+        public async Task<IActionResult> Checkout([FromBody] List<CartItem> cartItems)
         {
             try
             {
-                var cartItems = GetCartFromCookies();
-                if (!cartItems.Any())
+                if (cartItems == null || !cartItems.Any())
                 {
                     return BadRequest("Cart is empty.");
                 }
 
                 var jwtToken = Request.Cookies["Token"];
+                Console.WriteLine($"Token: {jwtToken}"); // Log the token to verify it is being retrieved
+
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    return BadRequest("Token not found.");
+                }
+
                 var secretKey = _configuration["ApiSettings:SecretKey"];
+                if (string.IsNullOrEmpty(secretKey))
+                {
+                    return BadRequest("Secret key not found.");
+                }
+
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
                 var tokenHandler = new JwtSecurityTokenHandler();
 
