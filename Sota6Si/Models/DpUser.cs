@@ -18,7 +18,7 @@ public partial class DpUser
 
     public DateTime DpRegistrationDate { get; set; }
 
-    public string DpPhoneNumber { get; set; } = null!;
+    public string? DpPhoneNumber { get; set; }
 
     [JsonIgnore]
     public virtual ICollection<DpOrder> DpOrders { get; set; } = new List<DpOrder>();
