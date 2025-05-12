@@ -14,6 +14,19 @@ namespace Sota6Si
             builder.Services.AddSwaggerGen();
             builder.Services.AddControllers();
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", builder =>
+                {
+                    builder.AllowAnyOrigin()
+                           .AllowAnyMethod()
+                           .AllowAnyHeader();
+                });
+            });
+            // Add logging
+            builder.Logging.AddConsole();
+            builder.Logging.AddDebug();
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -23,10 +36,14 @@ namespace Sota6Si
                 app.UseSwaggerUI();
             }
 
+            app.UseHttpsRedirection();
             app.UseAuthorization();
 
+            // Use CORS policy
+            app.UseCors("AllowAll");
 
             app.MapControllers();
+
 
             app.Run();
         }

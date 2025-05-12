@@ -16,11 +16,13 @@ namespace Sota6Si.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(AppDbContext context, IConfiguration configuration)
+        public AuthController(AppDbContext context, IConfiguration configuration, ILogger<AuthController> logger)
         {
             _context = context;
             _configuration = configuration;
+            _logger = logger;
         }
 
         [HttpPost("register")]
@@ -35,7 +37,7 @@ namespace Sota6Si.Controllers
             {
                 DpUsername = userDto.Username,
                 DpPassword = userDto.Password,
-                DpPhoneNumber = "0000000000",
+                DpPhoneNumber = userDto.PhoneNumber,
                 DpRegistrationDate = DateTime.Now
             };
 
@@ -48,6 +50,13 @@ namespace Sota6Si.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] UserDto userDto)
         {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                _logger.LogError("Validation errors: {Errors}", errors);
+                return BadRequest(new { Errors = errors });
+            }
+
             var user = await _context.DpUsers.FirstOrDefaultAsync(u => u.DpUsername == userDto.Username && u.DpPassword == userDto.Password);
 
             if (user == null)
