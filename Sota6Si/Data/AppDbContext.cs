@@ -36,6 +36,9 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<DpUserProj> DpUserProjs { get; set; }
 
+    public virtual DbSet<UserHasAchievement> UserHasAchievements { get; set; }
+
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseSqlServer("Data Source=localhost;Integrated Security=True;Trust Server Certificate=True; Database=dp");
@@ -56,10 +59,31 @@ public partial class AppDbContext : DbContext
 
             // Установка многих-ко-многим отношений
             entity.HasMany(a => a.UserHasAchievements)
-                .WithOne(uh => uh.Achievement) // Указываем, что UserHasAchievement ссылается на Achievement
+                .WithOne(uh => uh.Achievement)
                 .HasForeignKey(uh => uh.AchievementId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_dp_user_proj_has_achievement_achievement1");
+        });
+
+        modelBuilder.Entity<UserHasAchievement>(entity =>
+        {
+            entity.HasKey(e => new { e.DpUserProjId, e.AchievementId });
+
+            entity.ToTable("user_has_achievement");
+
+            entity.Property(e => e.DpUserProjId).HasColumnName("dp_user_proj_id");
+            entity.Property(e => e.AchievementId).HasColumnName("achievement_id");
+            entity.Property(e => e.IsObtained).HasColumnName("is_obtained");
+
+            entity.HasOne(uh => uh.Achievement)
+                .WithMany(a => a.UserHasAchievements)
+                .HasForeignKey(uh => uh.AchievementId)
+                .HasConstraintName("fk_user_has_achievement_achievement");
+
+            entity.HasOne(uh => uh.DpUserProj)
+                .WithMany(d => d.UserHasAchievements)
+                .HasForeignKey(uh => uh.DpUserProjId)
+                .HasConstraintName("fk_user_has_achievement_dp_user_proj");
         });
 
         modelBuilder.Entity<DpCategory>(entity =>
@@ -280,7 +304,7 @@ public partial class AppDbContext : DbContext
 
             // Установка многих-ко-многим отношений
             entity.HasMany(d => d.UserHasAchievements)
-                .WithOne(uh => uh.DpUserProj) // Указываем, что UserHasAchievement ссылается на DpUserProj
+                .WithOne(uh => uh.DpUserProj)
                 .HasForeignKey(uh => uh.DpUserProjId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_dp_user_proj_has_achievement_dp_user_proj1");

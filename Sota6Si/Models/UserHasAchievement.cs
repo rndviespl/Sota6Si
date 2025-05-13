@@ -14,5 +14,4 @@ namespace Sota6Si.Models
         [JsonIgnore]
         public virtual DpUserProj DpUserProj { get; set; } = null!;
     }
-
 }
