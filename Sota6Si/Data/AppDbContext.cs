@@ -53,6 +53,13 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Title)
                 .HasMaxLength(100)
                 .HasColumnName("title");
+
+            // Установка многих-ко-многим отношений
+            entity.HasMany(a => a.UserHasAchievements)
+                .WithOne(uh => uh.Achievement) // Указываем, что UserHasAchievement ссылается на Achievement
+                .HasForeignKey(uh => uh.AchievementId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_dp_user_proj_has_achievement_achievement1");
         });
 
         modelBuilder.Entity<DpCategory>(entity =>
@@ -258,7 +265,6 @@ public partial class AppDbContext : DbContext
         modelBuilder.Entity<DpUserProj>(entity =>
         {
             entity.HasKey(e => e.DpUserProjId).HasName("PK_DpUserProj");
-
             entity.ToTable("dp_user_proj");
 
             entity.Property(e => e.DpUserProjId).HasColumnName("dp_user_proj_id");
@@ -272,26 +278,12 @@ public partial class AppDbContext : DbContext
                 .HasMaxLength(100)
                 .HasColumnName("password");
 
-            entity.HasMany(d => d.Achievements).WithMany(p => p.DpUserProjs)
-                .UsingEntity<Dictionary<string, object>>(
-                    "UserHasAchievement",
-                    r => r.HasOne<Achievement>().WithMany()
-                        .HasForeignKey("AchievementId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("fk_dp_user_proj_has_achievement_achievement1"),
-                    l => l.HasOne<DpUserProj>().WithMany()
-                        .HasForeignKey("DpUserProjId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("fk_dp_user_proj_has_achievement_dp_user_proj1"),
-                    j =>
-                    {
-                        j.HasKey("DpUserProjId", "AchievementId").HasName("PK_UserHasAchievement");
-                        j.ToTable("user_has_achievement");
-                        j.HasIndex(new[] { "AchievementId" }, "fk_dp_user_proj_has_achievement_achievement1_idx");
-                        j.HasIndex(new[] { "DpUserProjId" }, "fk_dp_user_proj_has_achievement_dp_user_proj1_idx");
-                        j.IndexerProperty<int>("DpUserProjId").HasColumnName("dp_user_proj_id");
-                        j.IndexerProperty<int>("AchievementId").HasColumnName("achievement_id");
-                    });
+            // Установка многих-ко-многим отношений
+            entity.HasMany(d => d.UserHasAchievements)
+                .WithOne(uh => uh.DpUserProj) // Указываем, что UserHasAchievement ссылается на DpUserProj
+                .HasForeignKey(uh => uh.DpUserProjId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_dp_user_proj_has_achievement_dp_user_proj1");
         });
 
         OnModelCreatingPartial(modelBuilder);
