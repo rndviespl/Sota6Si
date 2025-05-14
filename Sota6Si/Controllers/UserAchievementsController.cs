@@ -104,6 +104,28 @@ namespace Sota6Si.Controllers
             return NoContent();
         }
 
+        // GET: api/UserAchievements/Completed/{username}
+        [HttpGet("Completed/{username}")]
+        public async Task<ActionResult<IEnumerable<Achievement>>> GetCompletedAchievementsByUsername(string username)
+        {
+            // Получение проекта пользователя по логину
+            var userProj = await _context.DpUserProjs.FirstOrDefaultAsync(up => up.Login == username);
+            if (userProj == null)
+            {
+                return NotFound("User project not found.");
+            }
+
+            // Получение выполненных достижений
+            var completedAchievements = await _context.UserHasAchievements
+                .Include(ua => ua.Achievement)
+                .Where(ua => ua.DpUserProjId == userProj.DpUserProjId && ua.IsObtained)
+                .Select(ua => ua.Achievement)
+                .ToListAsync();
+
+            return completedAchievements;
+        }
+
+
         private bool UserAchievementExists(int userProjId, int achievementId)
         {
             return _context.UserHasAchievements
