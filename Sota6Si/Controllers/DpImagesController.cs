@@ -55,7 +55,6 @@ namespace Sota6Si.Controllers
                 return Problem(detail: ex.Message, statusCode: 500);
             }
         }
-
         // POST: api/DpImages
         [HttpPost]
         public async Task<IActionResult> CreateDpImage([FromForm] CreateDpImageRequest request)
@@ -85,6 +84,7 @@ namespace Sota6Si.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Ошибка при загрузке изображения: {ex.Message}");
                 return Problem(detail: ex.Message, statusCode: 500);
             }
         }
