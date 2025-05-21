@@ -72,6 +72,16 @@ namespace Sota6Si.Controllers
         [HttpPut("Unlock/{userProjId}/{achievementId}")]
         public async Task<IActionResult> UnlockUserAchievement(int userProjId, int achievementId)
         {
+            // Check if the user achievement exists
+            bool exists = await UserAchievementExists(userProjId, achievementId);
+
+            if (!exists)
+            {
+                // If it doesn't exist, create it
+                await CreateUserAchievement(userProjId, achievementId);
+            }
+
+            // Retrieve the user achievement
             var userAchievement = await _context.UserHasAchievements
                 .FirstOrDefaultAsync(ua => ua.DpUserProjId == userProjId && ua.AchievementId == achievementId);
 
@@ -80,7 +90,7 @@ namespace Sota6Si.Controllers
                 return NotFound();
             }
 
-            // Изменение статуса IsObtained на противоположный
+            // Toggle the IsObtained status
             userAchievement.IsObtained = !userAchievement.IsObtained;
 
             _context.Entry(userAchievement).State = EntityState.Modified;
@@ -91,7 +101,7 @@ namespace Sota6Si.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!UserAchievementExists(userProjId, achievementId))
+                if (!await UserAchievementExists(userProjId, achievementId))
                 {
                     return NotFound();
                 }
@@ -103,6 +113,7 @@ namespace Sota6Si.Controllers
 
             return NoContent();
         }
+
 
         // GET: api/UserAchievements/Completed/{username}
         [HttpGet("Completed/{username}")]
@@ -125,11 +136,12 @@ namespace Sota6Si.Controllers
             return completedAchievements;
         }
 
-
-        private bool UserAchievementExists(int userProjId, int achievementId)
+        // GET: api/UserAchievements/Exists/{userProjId}/{achievementId}
+        [HttpGet("Exists/{userProjId}/{achievementId}")]
+        public async Task<bool> UserAchievementExists(int userProjId, int achievementId)
         {
-            return _context.UserHasAchievements
-                .Any(e => e.DpUserProjId == userProjId && e.AchievementId == achievementId);
+            return await _context.UserHasAchievements
+                .AnyAsync(ua => ua.DpUserProjId == userProjId && ua.AchievementId == achievementId);
         }
     }
-}
+} 
