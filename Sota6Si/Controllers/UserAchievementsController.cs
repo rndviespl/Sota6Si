@@ -54,6 +54,15 @@ namespace Sota6Si.Controllers
                 return Conflict(); // Возвращаем конфликт, если связь уже существует
             }
 
+            // Проверка существования пользователя и достижения
+            var userProjExists = await _context.DpUserProjs.AnyAsync(up => up.DpUserProjId == userProjId);
+            var achievementExists = await _context.Achievements.AnyAsync(a => a.AchievementId == achievementId);
+
+            if (!userProjExists || !achievementExists)
+            {
+                return BadRequest("User or achievement does not exist.");
+            }
+
             // Создание новой связи
             var userAchievement = new UserHasAchievement
             {
@@ -67,6 +76,7 @@ namespace Sota6Si.Controllers
 
             return CreatedAtAction("GetUserAchievement", new { userProjId = userAchievement.DpUserProjId, achievementId = userAchievement.AchievementId }, userAchievement);
         }
+
 
         // PUT: api/UserAchievements/Unlock/{userProjId}/{achievementId}
         [HttpPut("Unlock/{userProjId}/{achievementId}")]

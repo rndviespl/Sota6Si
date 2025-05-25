@@ -31,7 +31,7 @@ namespace Sota6Si.Controllers
         {
             if (await _context.DpUserProjs.AnyAsync(u => u.Login == userProjDto.Login))
             {
-                return BadRequest("User already exists.");
+                return BadRequest(new { Error = "User already exists." });
             }
 
             var userProj = new DpUserProj
@@ -61,7 +61,7 @@ namespace Sota6Si.Controllers
 
             if (userProj == null)
             {
-                return Unauthorized("Invalid login or password.");
+                return Unauthorized(new { Error = "Invalid login or password." });
             }
 
             var token = GenerateJwtToken(userProj);

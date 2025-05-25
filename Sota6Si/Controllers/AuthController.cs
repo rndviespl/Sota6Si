@@ -7,6 +7,7 @@ using Sota6Si.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Sota6Si.Controllers
 {
@@ -30,7 +31,7 @@ namespace Sota6Si.Controllers
         {
             if (await _context.DpUsers.AnyAsync(u => u.DpUsername == userDto.Username))
             {
-                return BadRequest("User already exists.");
+                return BadRequest(new { Error = "User already exists." });
             }
 
             var user = new DpUser
@@ -44,7 +45,7 @@ namespace Sota6Si.Controllers
             _context.DpUsers.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok("User registered successfully.");
+            return Ok(new { Message = "User registered successfully." });
         }
 
         [HttpPost("login")]
@@ -61,11 +62,11 @@ namespace Sota6Si.Controllers
 
             if (user == null)
             {
-                return Unauthorized("Invalid username or password.");
+                return Unauthorized(new { Error = "Invalid username or password." });
             }
 
             var token = GenerateJwtToken(user);
-            return Ok(new { Token = token });
+            return Ok(new { Token = token, UserProjId = user.DpUserId });
         }
 
         private string GenerateJwtToken(DpUser user)
