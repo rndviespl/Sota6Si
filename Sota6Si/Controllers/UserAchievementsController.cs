@@ -68,7 +68,7 @@ namespace Sota6Si.Controllers
             {
                 DpUserProjId = userProjId,
                 AchievementId = achievementId,
-                IsObtained = false // По умолчанию достижение не получено
+                IsObtained = true // По умолчанию достижение не получено
             };
 
             _context.UserHasAchievements.Add(userAchievement);
@@ -102,7 +102,7 @@ namespace Sota6Si.Controllers
 
             // Toggle the IsObtained status
             userAchievement.IsObtained = !userAchievement.IsObtained;
-
+            userAchievement.IsObtained = true; // Явно устанавливаем true
             _context.Entry(userAchievement).State = EntityState.Modified;
 
             try
