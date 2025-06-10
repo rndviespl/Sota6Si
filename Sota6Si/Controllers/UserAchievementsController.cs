@@ -83,9 +83,9 @@ namespace Sota6Si.Controllers
         public async Task<IActionResult> UnlockUserAchievement(int userProjId, int achievementId)
         {
             // Check if the user achievement exists
-            bool exists = await UserAchievementExists(userProjId, achievementId);
+            var existsResponse = await UserAchievementExists(userProjId, achievementId);
 
-            if (!exists)
+            if (existsResponse.Value == false)
             {
                 // If it doesn't exist, create it
                 await CreateUserAchievement(userProjId, achievementId);
@@ -100,9 +100,8 @@ namespace Sota6Si.Controllers
                 return NotFound();
             }
 
-            // Toggle the IsObtained status
-            userAchievement.IsObtained = !userAchievement.IsObtained;
-            userAchievement.IsObtained = true; // Явно устанавливаем true
+            // Set the IsObtained status to true
+            userAchievement.IsObtained = true;
             _context.Entry(userAchievement).State = EntityState.Modified;
 
             try
@@ -111,7 +110,8 @@ namespace Sota6Si.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!await UserAchievementExists(userProjId, achievementId))
+                var existsCheck = await UserAchievementExists(userProjId, achievementId);
+                if (existsCheck.Value == false)
                 {
                     return NotFound();
                 }
@@ -123,6 +123,7 @@ namespace Sota6Si.Controllers
 
             return NoContent();
         }
+
 
 
         // GET: api/UserAchievements/Completed/{username}
@@ -146,12 +147,40 @@ namespace Sota6Si.Controllers
             return completedAchievements;
         }
 
-        // GET: api/UserAchievements/Exists/{userProjId}/{achievementId}
+        /// <summary>
+        /// Проверяет, существует ли достижение для пользователя
+        /// </summary>
+        /// <param name="userProjId">Идентификатор пользователя проекта</param>
+        /// <param name="achievementId">Идентификатор достижения</param>
+        /// <returns>Булево значение: true, если достижение существует</returns>
         [HttpGet("Exists/{userProjId}/{achievementId}")]
-        public async Task<bool> UserAchievementExists(int userProjId, int achievementId)
+        public async Task<ActionResult<bool>> UserAchievementExists(int userProjId, int achievementId)
         {
-            return await _context.UserHasAchievements
+            // Валидация входных параметров
+            if (userProjId <= 0 || achievementId <= 0)
+            {
+                return BadRequest("Некорректный userProjId или achievementId");
+            }
+
+            // Проверка существования пользователя
+            var userProjExists = await _context.DpUserProjs.AnyAsync(up => up.DpUserProjId == userProjId);
+            if (!userProjExists)
+            {
+                return NotFound("Пользователь с указанным ID не найден");
+            }
+
+            // Проверка существования достижения
+            var achievementExists = await _context.Achievements.AnyAsync(a => a.AchievementId == achievementId);
+            if (!achievementExists)
+            {
+                return NotFound("Достижение с указанным ID не найдено");
+            }
+
+            // Проверка существования связи
+            var exists = await _context.UserHasAchievements
                 .AnyAsync(ua => ua.DpUserProjId == userProjId && ua.AchievementId == achievementId);
+
+            return Ok(exists);
         }
     }
 } 
