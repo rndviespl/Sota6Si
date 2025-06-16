@@ -1,0 +1,19 @@
+services:
+  sota6si:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_URLS=http://*:8080
+    restart: unless-stopped
+    volumes:
+      - ./appdata:/app/Data
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    external: true
+    name: sota6sifront_my_network
