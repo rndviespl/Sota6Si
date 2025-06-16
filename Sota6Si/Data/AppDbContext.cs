@@ -7,8 +7,16 @@ namespace Sota6Si.Data;
 
 public partial class AppDbContext : DbContext
 {
+    private readonly string _connectionString;
+
     public AppDbContext()
     {
+        var configuration = new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json")
+            .Build();
+
+        _connectionString = configuration.GetConnectionString("DefaultConnection");
     }
 
     public AppDbContext(DbContextOptions<AppDbContext> options)
@@ -40,8 +48,12 @@ public partial class AppDbContext : DbContext
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Data Source=localhost;Integrated Security=True;Trust Server Certificate=True; Database=dp");
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder.UseSqlServer(_connectionString);
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

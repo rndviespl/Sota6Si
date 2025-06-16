@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Sota6Si.Data;
 
 namespace Sota6Si
@@ -7,6 +8,8 @@ namespace Sota6Si
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             // Add services to the container.
             builder.Services.AddDbContext<AppDbContext>();

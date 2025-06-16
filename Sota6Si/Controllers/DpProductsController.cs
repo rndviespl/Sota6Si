@@ -49,7 +49,6 @@ namespace Sota6Si.Controllers
                     .Include(p => p.DpImages)
                     .Include(p => p.DpCategory)
                     .Include(p => p.DpProductAttributes)
-                        .ThenInclude(pa => pa.DpSizeNavigation)
                     .FirstOrDefaultAsync(p => p.DpProductId == id);
 
                 if (product == null)
