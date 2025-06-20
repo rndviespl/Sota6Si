@@ -16,6 +16,7 @@ namespace Sota6Si
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddControllers();
+            builder.Services.AddMemoryCache();
 
             builder.Services.AddCors(options =>
             {

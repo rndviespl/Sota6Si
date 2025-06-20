@@ -4,8 +4,13 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SixLabors.ImageSharp.Formats.Jpeg;
 using Sota6Si.Data;
 using Sota6Si.Models;
+using static System.Net.Mime.MediaTypeNames;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Sota6Si.Controllers
 {
@@ -26,7 +31,74 @@ namespace Sota6Si.Controllers
         {
             try
             {
-                var images = await _context.DpImages.ToListAsync();
+                var images = await _context.DpImages
+                    .Select(img => new
+                    {
+                        img.DpImagesId,
+                        img.DpProductId,
+                        img.DpImageTitle,
+                        // Избегаем загрузки ImagesData, если не нужно
+                        ImagesData = img.ImagesData != null ? img.ImagesData.Length : 0
+                    })
+                    .ToListAsync();
+                return Ok(images);
+            }
+            catch (Exception ex)
+            {
+                return Problem(detail: ex.Message, statusCode: 500);
+            }
+        }
+
+        [HttpGet("{id}/image")]
+        public async Task<IActionResult> GetDpImageData(int id, [FromServices] IMemoryCache cache)
+        {
+            try
+            {
+                var cacheKey = $"image_{id}_480";
+                if (!cache.TryGetValue(cacheKey, out byte[]? cachedImage))
+                {
+                    var dpImage = await _context.DpImages.FindAsync(id);
+                    if (dpImage == null || dpImage.ImagesData == null)
+                    {
+                        return NotFound();
+                    }
+
+                    using var stream = new MemoryStream(dpImage.ImagesData);
+                    using var image = await SixLabors.ImageSharp.Image.LoadAsync(stream);
+                    using var outputStream = new MemoryStream();
+                    image.Mutate(x => x.Resize(new ResizeOptions
+                    {
+                        Size = new Size(480, 480),
+                        Mode = ResizeMode.Max
+                    }));
+                    await image.SaveAsync(outputStream, new JpegEncoder { Quality = 75 });
+
+                    cachedImage = outputStream.ToArray();
+                    cache.Set(cacheKey, cachedImage, new MemoryCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(30)
+                    });
+                }
+
+                Response.Headers.Add("Cache-Control", "public, max-age=31536000");
+                return File(cachedImage, "image/jpeg");
+            }
+            catch (Exception ex)
+            {
+                return Problem(detail: ex.Message, statusCode: 500);
+            }
+        }
+
+        // GET: api/DpImages/ByProduct/{productId}
+        [HttpGet("ByProduct/{productId}")]
+        public async Task<IActionResult> GetImagesByProductId(int productId)
+        {
+            try
+            {
+                var images = await _context.DpImages
+                    .Where(img => img.DpProductId == productId)
+                    .ToListAsync();
+
                 return Ok(images);
             }
             catch (Exception ex)
@@ -149,26 +221,6 @@ namespace Sota6Si.Controllers
                 await _context.SaveChangesAsync();
 
                 return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return Problem(detail: ex.Message, statusCode: 500);
-            }
-        }
-
-        // GET: api/DpImages/{id}/image
-        [HttpGet("{id}/image")]
-        public async Task<IActionResult> GetDpImageData(int id)
-        {
-            try
-            {
-                var dpImage = await _context.DpImages.FindAsync(id);
-                if (dpImage == null || dpImage.ImagesData == null)
-                {
-                    return NotFound();
-                }
-
-                return File(dpImage.ImagesData, "image/png");
             }
             catch (Exception ex)
             {
